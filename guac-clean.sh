@@ -1,13 +1,17 @@
 #!/bin/bash
-# guac-clean — a lean, transparent macOS maintenance script 🥑
-# (placeholder name — will be renamed before publishing)
+# guac-clean: a lean, transparent macOS maintenance script 🥑
+# (placeholder name; will be renamed before publishing)
 
-clear
-echo "🥑  guac-clean — keeping your Mac ripe"
-echo ""
+if [ -t 1 ]; then
+  BOLD=$(tput bold 2>/dev/null)
+  RESET=$(tput sgr0 2>/dev/null)
+else
+  BOLD=""
+  RESET=""
+fi
 
 # Best-effort, cosmetic-only guess at a human-readable name from a bundle ID.
-# Not authoritative — always shown alongside the raw bundle ID, never used for matching logic.
+# Not authoritative: always shown alongside the raw bundle ID, never used for matching logic.
 friendly_name() {
   local id="$1"
   IFS='.' read -ra parts <<< "$id"
@@ -31,190 +35,283 @@ friendly_name() {
   echo "$name"
 }
 
-PS3=$'\nSelection: '
-
 options=(
+  "Delete User Junk Files (Cache + Logs)"
+  "Delete System Junk Files (sudo)"
+  "Delete Recent Items Lists"
+  "Delete Terminal History"
+  "Delete Download History"
   "Flush DNS Cache"
-  "System Junk (User Caches + Logs)"
-  "System Caches (sudo, /Library/Caches)"
-  "Recent Items"
-  "Clear Terminal History"
-  "Clear Download History"
-  "Snapshot Thinning (Time Machine)"
-  "Leftover Sweep (orphaned app data)"
-  "──────── ⚠️  destructive below ────────"
+  "Time Machine Snapshot Thinning"
+  "Leftover Sweep Scan (orphaned app data)"
+  "Run Full Sweep (all safe options)"
   "🔥 Empty Trash (Permanent Delete)"
-  "Exit"
 )
 
-select opt in "${options[@]}"
-do
-  case $opt in
-    "Flush DNS Cache")
-      echo "🧹  Flushing DNS cache..."
-      sudo dscacheutil -flushcache
-      sudo killall -HUP mDNSResponder
-      echo "✅  DNS cache flushed."
-      ;;
-    "System Junk (User Caches + Logs)")
-      echo "🧹  This clears your account's app caches (~/Library/Caches) and logs (~/Library/Logs)."
-      echo "    These are temp files apps create over time — not your files or settings."
-      echo "    Nothing is deleted directly — everything moves to a dated folder inside Trash first."
+print_menu() {
+  echo ""
+  local i=1
+  for o in "${options[@]}"; do
+    printf '%s%2d) %s%s\n' "$BOLD" "$i" "$o" "$RESET"
+    i=$((i + 1))
+  done
+  echo ""
+  echo "Type E or EXIT to quit."
+}
+
+sudo_notice() {
+  echo "🔑  macOS will now ask for your password. Press Ctrl+C anytime to cancel."
+}
+
+# --- Safe, reusable actions (no confirm prompt inside; callers handle that) ---
+
+do_user_junk() {
+  local batch="$HOME/.Trash/guac-clean-user-junk-$(date +%Y%m%d-%H%M%S)"
+  mkdir -p "$batch/Caches" "$batch/Logs" "$batch/Xcode"
+  shopt -s nullglob dotglob
+  local cache_items=("$HOME"/Library/Caches/*)
+  local log_items=("$HOME"/Library/Logs/*)
+  local xcode_items=("$HOME/Library/Developer/Xcode/DerivedData"/*)
+  shopt -u nullglob dotglob
+  if [ ${#cache_items[@]} -gt 0 ]; then
+    mv "${cache_items[@]}" "$batch/Caches/" 2>/dev/null
+  fi
+  if [ ${#log_items[@]} -gt 0 ]; then
+    mv "${log_items[@]}" "$batch/Logs/" 2>/dev/null
+  fi
+  if [ ${#xcode_items[@]} -gt 0 ]; then
+    mv "${xcode_items[@]}" "$batch/Xcode/" 2>/dev/null
+  fi
+  echo "✅  Moved ${#cache_items[@]} cache item(s), ${#log_items[@]} log item(s), and ${#xcode_items[@]} Xcode DerivedData item(s) to Trash."
+  echo "    $batch"
+}
+
+do_system_caches() {
+  local batch="$HOME/.Trash/guac-clean-system-junk-$(date +%Y%m%d-%H%M%S)"
+  mkdir -p "$batch"
+  shopt -s nullglob dotglob
+  local sys_cache_items=(/Library/Caches/*)
+  shopt -u nullglob dotglob
+  if [ ${#sys_cache_items[@]} -gt 0 ]; then
+    sudo mv "${sys_cache_items[@]}" "$batch/" 2>/dev/null
+    sudo chown -R "$(whoami)" "$batch"
+  fi
+  echo "✅  Moved ${#sys_cache_items[@]} item(s) to Trash."
+  echo "    $batch"
+  echo "    A few items may be skipped if actively in use. That's normal."
+}
+
+do_recent_items() {
+  local batch="$HOME/.Trash/guac-clean-recent-items-$(date +%Y%m%d-%H%M%S)"
+  mkdir -p "$batch"
+  shopt -s nullglob dotglob
+  local recent_items=("$HOME/Library/Application Support/com.apple.sharedfilelist"/*)
+  shopt -u nullglob dotglob
+  if [ ${#recent_items[@]} -gt 0 ]; then
+    mv "${recent_items[@]}" "$batch/" 2>/dev/null
+  fi
+  echo "✅  Moved ${#recent_items[@]} item(s) to Trash."
+  echo "    $batch"
+}
+
+do_terminal_history() {
+  local batch="$HOME/.Trash/guac-clean-terminal-history-$(date +%Y%m%d-%H%M%S)"
+  mkdir -p "$batch"
+  local moved=0
+  for f in "$HOME/.zsh_history" "$HOME/.bash_history"; do
+    if [ -f "$f" ]; then
+      mv "$f" "$batch/" 2>/dev/null && moved=$((moved + 1))
+    fi
+  done
+  if [ "$moved" -eq 0 ]; then
+    echo "ℹ️  No shell history files found. Nothing to clear."
+  else
+    echo "✅  Moved $moved history file(s) to Trash."
+    echo "    $batch"
+  fi
+}
+
+do_download_history() {
+  local qfile="$HOME/Library/Preferences/com.apple.LaunchServices.QuarantineEventsV2"
+  if [ -e "$qfile" ]; then
+    local batch="$HOME/.Trash/guac-clean-download-history-$(date +%Y%m%d-%H%M%S)"
+    mkdir -p "$batch"
+    mv "$qfile" "$batch/" 2>/dev/null
+    echo "✅  Moved download history to Trash."
+    echo "    $batch"
+  else
+    echo "ℹ️  No download history file found. Nothing to clear."
+  fi
+}
+
+do_flush_dns() {
+  sudo dscacheutil -flushcache
+  sudo killall -HUP mDNSResponder
+  echo "✅  DNS cache flushed."
+}
+
+do_snapshot_thinning() {
+  local snapshots
+  snapshots=$(tmutil listlocalsnapshots / 2>/dev/null | grep '^com\.apple\.TimeMachine\.' | sed -E 's/^com\.apple\.TimeMachine\.//; s/\.local.*$//')
+  if [ -z "$snapshots" ]; then
+    echo "ℹ️  No local snapshots found. Nothing to thin."
+  else
+    local success=0
+    local failed=0
+    while IFS= read -r snap; do
+      [ -z "$snap" ] && continue
+      if sudo tmutil deletelocalsnapshots "$snap" >/dev/null 2>&1; then
+        success=$((success + 1))
+      else
+        failed=$((failed + 1))
+      fi
+    done <<< "$snapshots"
+    echo "✅  Removed $success local snapshot(s)."
+    if [ "$failed" -gt 0 ]; then
+      echo "⚠️  $failed snapshot(s) could not be removed. This can happen with in-use or protected snapshots."
+    fi
+  fi
+}
+
+# --- Startup banner ---
+
+clear
+echo "${BOLD}🥑  guac-clean: Keeping your Mac ripe${RESET}"
+echo ""
+printf '%-22s%s\n' '      ___' ""
+printf '%-22s%s\n' '    /     \' "+--------------------------------------------------------------+"
+printf '%-22s%s\n' '   /  ___  \' "| Nothing here is destructive by default.                      |"
+printf '%-22s%s\n' '  |  /   \  |' "| Every option below moves files to the Trash first, not       |"
+printf '%-22s%s\n' '  |  \___/  |' "| permanent deletion, except the one clearly marked below.     |"
+printf '%-22s%s\n' '   \       /' "| You'll always get a chance to confirm before anything runs.  |"
+printf '%-22s%s\n' '    \_____/' "+--------------------------------------------------------------+"
+
+trap 'echo ""; echo "❎  Cancelled with Ctrl+C. Back to the menu."; continue' SIGINT
+
+while true; do
+  print_menu
+  read -rp "Selection: " REPLY
+
+  if [ -z "$REPLY" ]; then
+    continue
+  fi
+
+  reply_lower="$(echo "$REPLY" | tr '[:upper:]' '[:lower:]')"
+  if [[ "$reply_lower" == "e" || "$reply_lower" == "exit" ]]; then
+    echo ""
+    echo "👋  See you next time!"
+    break
+  fi
+
+  if [[ "$REPLY" =~ ^[0-9]+$ ]] && [ "$REPLY" -ge 1 ] && [ "$REPLY" -le "${#options[@]}" ]; then
+    opt="${options[$((REPLY - 1))]}"
+  else
+    echo "❎  Not a valid option. Type a number 1 through 10, or E to exit."
+    continue
+  fi
+
+  case "$opt" in
+    "Delete User Junk Files (Cache + Logs)")
+      echo "🧹  This clears your account's app caches (~/Library/Caches), logs (~/Library/Logs),"
+      echo "    and Xcode's DerivedData build cache (~/Library/Developer/Xcode/DerivedData), if present."
+      echo "    These are all temporary files that get regenerated automatically, not your personal"
+      echo "    files or settings."
+      echo "    Same Trash-first policy applies: Trashed items are sent to the Trash, and nothing is deleted directly."
       read -p "Continue? [y/N] " confirm
       if [[ "$confirm" =~ ^[Yy]$ ]]; then
-        batch="$HOME/.Trash/guac-clean-system-junk-$(date +%Y%m%d-%H%M%S)"
-        mkdir -p "$batch/Caches" "$batch/Logs"
-        shopt -s nullglob dotglob
-        cache_items=("$HOME"/Library/Caches/*)
-        log_items=("$HOME"/Library/Logs/*)
-        shopt -u nullglob dotglob
-        if [ ${#cache_items[@]} -gt 0 ]; then
-          mv "${cache_items[@]}" "$batch/Caches/" 2>/dev/null
-        fi
-        if [ ${#log_items[@]} -gt 0 ]; then
-          mv "${log_items[@]}" "$batch/Logs/" 2>/dev/null
-        fi
-        echo "✅  Moved ${#cache_items[@]} cache item(s) and ${#log_items[@]} log item(s) to Trash:"
-        echo "    $batch"
-        echo "    Review or restore anytime before running Empty Trash."
+        do_user_junk
       else
-        echo "❎  Skipped — nothing touched."
+        echo "❎  Skipped, nothing touched."
       fi
       ;;
-    "System Caches (sudo, /Library/Caches)")
-      echo "🧹  This clears /Library/Caches — the shared cache folder used by system-level"
-      echo "    processes and potentially other accounts on this Mac, not just yours."
+    "Delete System Junk Files (sudo)")
+      echo "🧹  This clears /Library/Caches, the shared cache folder used by system-level processes"
+      echo "    and potentially other accounts on this Mac, not just yours."
       echo "    Requires sudo, since these files are owned by root."
-      echo "    Same Trash-first policy applies — nothing is deleted directly."
+      echo "    Same Trash-first policy applies: Trashed items are sent to the Trash, and nothing is deleted directly."
       read -p "Continue? [y/N] " confirm
       if [[ "$confirm" =~ ^[Yy]$ ]]; then
-        batch="$HOME/.Trash/guac-clean-system-caches-$(date +%Y%m%d-%H%M%S)"
-        mkdir -p "$batch"
-        shopt -s nullglob dotglob
-        sys_cache_items=(/Library/Caches/*)
-        shopt -u nullglob dotglob
-        if [ ${#sys_cache_items[@]} -gt 0 ]; then
-          sudo mv "${sys_cache_items[@]}" "$batch/" 2>/dev/null
-          sudo chown -R "$(whoami)" "$batch"
-        fi
-        echo "✅  Moved ${#sys_cache_items[@]} item(s) to Trash:"
-        echo "    $batch"
-        echo "    Review or restore anytime before running Empty Trash."
-        echo "    Note: a few items may be skipped if actively in use — that's normal."
+        sudo_notice
+        do_system_caches
       else
-        echo "❎  Skipped — nothing touched."
+        echo "❎  Skipped, nothing touched."
       fi
       ;;
-    "Recent Items")
-      echo "🧹  This clears your Recent Items lists — Apple menu Recent Documents/Applications/Servers,"
-      echo "    and each app's own File > Open Recent menu."
-      echo "    These are just shortcuts to files you've opened — not the files themselves."
-      echo "    Note: apps already open may not reflect this until you quit and reopen them."
-      echo "    Nothing is deleted directly — everything moves to a dated folder inside Trash first."
+    "Delete Recent Items Lists")
+      echo "🧹  This clears your Recent Items lists: Apple menu Recent Documents, Recent Applications,"
+      echo "    Recent Servers, plus each app's own File > Open Recent menu."
+      echo "    These are just shortcuts to files you've opened, not the files themselves."
+      echo "    Apps already open may not reflect this until you quit and reopen them."
+      echo "    Same Trash-first policy applies: Trashed items are sent to the Trash, and nothing is deleted directly."
       read -p "Continue? [y/N] " confirm
       if [[ "$confirm" =~ ^[Yy]$ ]]; then
-        batch="$HOME/.Trash/guac-clean-recent-items-$(date +%Y%m%d-%H%M%S)"
-        mkdir -p "$batch"
-        shopt -s nullglob dotglob
-        recent_items=("$HOME/Library/Application Support/com.apple.sharedfilelist"/*)
-        shopt -u nullglob dotglob
-        if [ ${#recent_items[@]} -gt 0 ]; then
-          mv "${recent_items[@]}" "$batch/" 2>/dev/null
-        fi
-        echo "✅  Moved ${#recent_items[@]} item(s) to Trash:"
-        echo "    $batch"
-        echo "    Review or restore anytime before running Empty Trash."
+        do_recent_items
       else
-        echo "❎  Skipped — nothing touched."
+        echo "❎  Skipped, nothing touched."
       fi
       ;;
-    "Clear Terminal History")
+    "Delete Terminal History")
       echo "🧹  This clears your shell command history (~/.zsh_history and ~/.bash_history)."
-      echo "    This is a running log of nearly every command you've typed — potentially"
-      echo "    privacy-sensitive (file paths, hostnames, occasionally a pasted secret)."
-      echo "    Note: your CURRENT open terminal session keeps its own history in memory,"
-      echo "    independent of the file on disk — for a fully clean sweep, do this from a"
-      echo "    window you're about to close, or open a fresh one afterward."
-      echo "    Nothing is deleted directly — everything moves to a dated folder inside Trash first."
+      echo "    This is a running log of nearly every command you've typed, and it can be privacy-sensitive"
+      echo "    (file paths, hostnames, occasionally a pasted secret)."
+      echo "    Your CURRENT open terminal session keeps its own history in memory, separate from the file"
+      echo "    on disk. For a fully clean sweep, do this from a window you're about to close, or open a"
+      echo "    fresh one afterward."
+      echo "    Same Trash-first policy applies: Trashed items are sent to the Trash, and nothing is deleted directly."
       read -p "Continue? [y/N] " confirm
       if [[ "$confirm" =~ ^[Yy]$ ]]; then
-        batch="$HOME/.Trash/guac-clean-terminal-history-$(date +%Y%m%d-%H%M%S)"
-        mkdir -p "$batch"
-        moved=0
-        for f in "$HOME/.zsh_history" "$HOME/.bash_history"; do
-          if [ -f "$f" ]; then
-            mv "$f" "$batch/" 2>/dev/null && moved=$((moved + 1))
-          fi
-        done
-        if [ "$moved" -eq 0 ]; then
-          echo "ℹ️  No shell history files found — nothing to clear."
-        else
-          echo "✅  Moved $moved history file(s) to Trash:"
-          echo "    $batch"
-          echo "    Review or restore anytime before running Empty Trash."
-        fi
+        do_terminal_history
       else
-        echo "❎  Skipped — nothing touched."
+        echo "❎  Skipped, nothing touched."
       fi
       ;;
-    "Clear Download History")
-      echo "🧹  This clears macOS's download-quarantine metadata — the record of what you"
-      echo "    downloaded, from where, and when."
-      echo "    It does NOT delete any downloaded files themselves — only that tracking record."
-      echo "    Nothing is deleted directly — everything moves to a dated folder inside Trash first."
+    "Delete Download History")
+      echo "🧹  This clears macOS's download quarantine metadata: the record of what you downloaded,"
+      echo "    from where, and when."
+      echo "    It does not delete any downloaded files themselves, only that tracking record."
+      echo "    Same Trash-first policy applies: Trashed items are sent to the Trash, and nothing is deleted directly."
       read -p "Continue? [y/N] " confirm
       if [[ "$confirm" =~ ^[Yy]$ ]]; then
-        qfile="$HOME/Library/Preferences/com.apple.LaunchServices.QuarantineEventsV2"
-        if [ -e "$qfile" ]; then
-          batch="$HOME/.Trash/guac-clean-download-history-$(date +%Y%m%d-%H%M%S)"
-          mkdir -p "$batch"
-          mv "$qfile" "$batch/" 2>/dev/null
-          echo "✅  Moved download history to Trash:"
-          echo "    $batch"
-          echo "    Review or restore anytime before running Empty Trash."
-        else
-          echo "ℹ️  No download history file found — nothing to clear."
-        fi
+        do_download_history
       else
-        echo "❎  Skipped — nothing touched."
+        echo "❎  Skipped, nothing touched."
       fi
       ;;
-    "Snapshot Thinning (Time Machine)")
-      echo "🧹  This removes local Time Machine snapshots — on-disk checkpoints macOS keeps"
-      echo "    for offline 'Browse in Time' access, not your actual backups."
-      echo "    Your real backup destination (external/network drive) is untouched."
-      echo "    Local snapshots regenerate automatically — this just reclaims space now."
+    "Flush DNS Cache")
+      echo "🧹  This flushes your Mac's DNS cache, the temporary record of recently looked-up websites,"
+      echo "    so future lookups are fetched fresh."
+      echo "    This does not touch any files. It only clears an in-memory cache that rebuilds itself"
+      echo "    automatically as you browse."
       echo "    Requires sudo."
       read -p "Continue? [y/N] " confirm
       if [[ "$confirm" =~ ^[Yy]$ ]]; then
-        snapshots=$(tmutil listlocalsnapshots / 2>/dev/null | grep '^com\.apple\.TimeMachine\.' | sed -E 's/^com\.apple\.TimeMachine\.//; s/\.local.*$//')
-        if [ -z "$snapshots" ]; then
-          echo "ℹ️  No local snapshots found — nothing to thin."
-        else
-          success=0
-          failed=0
-          while IFS= read -r snap; do
-            [ -z "$snap" ] && continue
-            if sudo tmutil deletelocalsnapshots "$snap" >/dev/null 2>&1; then
-              success=$((success + 1))
-            else
-              failed=$((failed + 1))
-            fi
-          done <<< "$snapshots"
-          echo "✅  Removed $success local snapshot(s)."
-          if [ "$failed" -gt 0 ]; then
-            echo "⚠️  $failed snapshot(s) could not be removed — this can happen with in-use or protected snapshots."
-          fi
-        fi
+        sudo_notice
+        do_flush_dns
       else
-        echo "❎  Skipped — nothing touched."
+        echo "❎  Skipped, nothing touched."
       fi
       ;;
-    "Leftover Sweep (orphaned app data)")
-      echo "🔍  This scans ~/Library for data left behind by apps that no longer appear to be installed —"
+    "Time Machine Snapshot Thinning")
+      echo "🧹  This removes local Time Machine snapshots, on-disk checkpoints macOS keeps for offline"
+      echo "    'Browse in Time' access. These are not your actual backups."
+      echo "    Your real backup destination (external or network drive) is untouched."
+      echo "    Local snapshots regenerate automatically, so this just reclaims space now."
+      echo "    Requires sudo."
+      read -p "Continue? [y/N] " confirm
+      if [[ "$confirm" =~ ^[Yy]$ ]]; then
+        sudo_notice
+        do_snapshot_thinning
+      else
+        echo "❎  Skipped, nothing touched."
+      fi
+      ;;
+    "Leftover Sweep Scan (orphaned app data)")
+      echo "🔍  This scans ~/Library for data left behind by apps that no longer appear to be installed,"
       echo "    matched by bundle identifier (including sub-components/extensions of installed apps,"
       echo "    case-insensitively) against everything currently in /Applications, /Applications/Setapp,"
       echo "    and ~/Applications."
+      echo "    If you choose to move anything, the same Trash-first policy applies: Trashed items are"
+      echo "    sent to the Trash, and nothing is deleted directly."
       echo "    Known limitation: app-group containers, shared third-party SDKs (Sparkle, Firebase,"
       echo "    Bugsnag, Keystone), and helpers with non-standard naming can still show up as false"
       echo "    positives. Review the summary carefully before selecting anything to move."
@@ -285,7 +382,7 @@ do
           echo "✅  No orphaned data found."
         else
           echo ""
-          echo "── Full raw list (for reference) ──────────────────────────"
+          echo "-- Full raw list (for reference) --------------------------"
           for i in "${!orphan_paths[@]}"; do
             echo "   [${orphan_labels[$i]}] ${orphan_paths[$i]}"
           done
@@ -310,7 +407,7 @@ do
           done
 
           echo ""
-          echo "── Found data for ${#unique_ids[@]} app(s) ─────────────────────────"
+          echo "-- Found data for ${#unique_ids[@]} app(s) ---------------------------"
           for i in "${!unique_ids[@]}"; do
             fname=$(friendly_name "${unique_ids[$i]}")
             n="${unique_counts[$i]}"
@@ -323,7 +420,7 @@ do
           echo "⚠️  Shared SDKs (Sparkle, Firebase, Bugsnag, Keystone) and helpers with unusual naming"
           echo "    can appear here even though the parent app is installed. When in doubt, leave it out."
           echo ""
-          echo "Enter numbers to move to Trash — e.g. 1,3,5-8 — or 'all', or 'none' to cancel:"
+          echo "Enter numbers to move to Trash, like 1,3,5-8, or 'all', or 'none' to cancel:"
           read -p "> " selection
 
           selected_indices=()
@@ -355,7 +452,7 @@ do
           fi
 
           if [ ${#selected_indices[@]} -eq 0 ]; then
-            echo "❎  Nothing selected — no changes made."
+            echo "❎  Nothing selected, no changes made."
           else
             batch="$HOME/.Trash/guac-clean-leftover-sweep-$(date +%Y%m%d-%H%M%S)"
             moved_total=0
@@ -372,43 +469,76 @@ do
                 fi
               done
             done
-            echo "✅  Moved $moved_total item(s) to Trash:"
+            echo "✅  Moved $moved_total item(s) to Trash."
             echo "    $batch"
-            echo "    Review or restore anytime before running Empty Trash."
           fi
         fi
       else
-        echo "❎  Skipped — no scan performed."
+        echo "❎  Skipped, no scan performed."
       fi
       ;;
-    "──────── ⚠️  destructive below ────────")
-      echo "(that's just a divider — pick a real option)"
+    "Run Full Sweep (all safe options)")
+      echo "🥑  This runs all 7 safe cleanup options in sequence: User Junk, System Junk (sudo),"
+      echo "    Recent Items, Terminal History, Download History, Flush DNS, and Time Machine"
+      echo "    Snapshot Thinning."
+      echo "    Leftover Sweep and Empty Trash are excluded since they need your manual review."
+      echo "    Same Trash-first policy applies: Trashed items are sent to the Trash, and nothing is deleted directly."
+      echo "    System Junk, Flush DNS, and Snapshot Thinning need sudo, so macOS may prompt for your"
+      echo "    password a few times along the way."
+      read -p "Run all of these now? [y/N] " confirm
+      if [[ "$confirm" =~ ^[Yy]$ ]]; then
+        echo ""
+        echo "▶  1/7  User Junk Files..."
+        do_user_junk
+        echo ""
+        echo "▶  2/7  System Junk Files (sudo)..."
+        sudo_notice
+        do_system_caches
+        echo ""
+        echo "▶  3/7  Recent Items..."
+        do_recent_items
+        echo ""
+        echo "▶  4/7  Terminal History..."
+        do_terminal_history
+        echo ""
+        echo "▶  5/7  Download History..."
+        do_download_history
+        echo ""
+        echo "▶  6/7  Flush DNS Cache..."
+        sudo_notice
+        do_flush_dns
+        echo ""
+        echo "▶  7/7  Time Machine Snapshot Thinning..."
+        sudo_notice
+        do_snapshot_thinning
+        echo ""
+        echo "✅  Full Sweep complete."
+      else
+        echo "❎  Skipped, nothing touched."
+      fi
       ;;
     "🔥 Empty Trash (Permanent Delete)")
       echo "🔥  This is different from everything else in this script."
       echo "    Every other cleanup action moves files to Trash first, so you can recover them."
-      echo "    This action permanently empties Trash — including any external drives' Trash."
-      echo "    Nothing removed here can be undone."
-      read -p "Type EMPTY to confirm: " confirm
+      echo "    This action permanently empties Trash, including any external drives' Trash."
+      echo "    ${BOLD}Nothing removed here can be undone.${RESET}"
+      read -p "${BOLD}Type EMPTY to confirm: ${RESET}" confirm
       if [[ "$confirm" == "EMPTY" ]]; then
         echo "🔥  Emptying Trash..."
         rm -rf ~/.Trash/*
         for vol_trash in /Volumes/*/.Trashes; do
           if [ -d "$vol_trash" ]; then
+            sudo_notice
             sudo rm -rf "$vol_trash"/*
           fi
         done
         echo "✅  Trash emptied."
       else
-        echo "❎  Cancelled — Trash left untouched."
+        echo "❎  Cancelled, Trash left untouched."
       fi
       ;;
-    "Exit")
-      echo "👋  See you next time."
-      break
-      ;;
     *)
-      echo "Invalid option, try again."
+      echo "❎  Not a valid option. Type a number 1 through 10, or E to exit."
       ;;
   esac
 done
