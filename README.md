@@ -83,11 +83,13 @@ Every design decision in this script follows from one rule: **nothing is ever si
 | Trash-only (recoverable) | Yes | Yes | Partial | Partial |
 | Install footprint | None, single file | App bundle in `/Applications` | Shell + compiled component, via Homebrew/script | App bundle + installer |
 
-¹ Mole, the CLI tool, (what's compared throughout this table) is GPL-3.0 licensed and fully open source. Mole for Mac is a separate, proprietary GUI app from the same author.
-² Per GitHub's own language breakdown of the repository: roughly 82% shell, 18% Go. The large majority of Mole is genuinely plain, readable shell script; a real but minority portion, notably its live status dashboard and disk analyzer, compiles down to a Go binary.
-³ The core differentiator this project exists for: a plain-text script you can read end to end has no gap between "the source" and "what runs," unlike anything that goes through a compile step.
-⁴ Code-signing and notarization exist to satisfy Gatekeeper's checks on compiled executables. A plain shell script isn't in that category to begin with, so this isn't a workaround, it's simply a different distribution model.
-⁵ Leftover Sweep matches by bundle identifier and reports a reviewable summary, but intentionally stops short of PureMac's and Mole's deeper heuristics (normalized-name matching, Team ID resolution). See [Known limitations](#%EF%B8%8F-known-limitations).
+<sub>
+¹ Mole, the CLI tool, (what's compared throughout this table) is GPL-3.0 licensed and fully open source. Mole for Mac is a separate, proprietary GUI app from the same author.<br>
+² Per GitHub's own language breakdown of the repository: roughly 82% shell, 18% Go. The large majority of Mole is genuinely plain, readable shell script; a real but minority portion, notably its live status dashboard and disk analyzer, compiles down to a Go binary.<br>
+³ The core differentiator this project exists for: a plain-text script you can read end to end has no gap between "the source" and "what runs," unlike anything that goes through a compile step.<br>
+⁴ Code-signing and notarization exist to satisfy Gatekeeper's checks on compiled executables. A plain shell script isn't in that category to begin with, so this isn't a workaround, it's simply a different distribution model.<br>
+⁵ Leftover Sweep matches by bundle identifier and reports a reviewable summary, but intentionally stops short of PureMac's and Mole's deeper heuristics (normalized-name matching, Team ID resolution). See [Known limitations](#%EF%B8%8F-known-limitations).<br>
+</sub>
 
 ---
 
