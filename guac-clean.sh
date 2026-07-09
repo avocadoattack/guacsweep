@@ -13,6 +13,7 @@ options=(
   "System Junk (User Caches + Logs)"
   "System Caches (sudo, /Library/Caches)"
   "Recent Items"
+  "Snapshot Thinning (Time Machine)"
   "──────── ⚠️  destructive below ────────"
   "🔥 Empty Trash (Permanent Delete)"
   "Exit"
@@ -104,6 +105,37 @@ do
         echo "✅  Moved ${#recent_items[@]} item(s) to Trash:"
         echo "    $batch"
         echo "    Review or restore anytime before running Empty Trash."
+      else
+        echo "❎  Skipped — nothing touched."
+      fi
+      ;;
+    "Snapshot Thinning (Time Machine)")
+      echo "🧹  This removes local Time Machine snapshots — on-disk checkpoints macOS keeps"
+      echo "    for offline 'Browse in Time' access, not your actual backups."
+      echo "    Your real backup destination (external/network drive) is untouched."
+      echo "    Local snapshots regenerate automatically — this just reclaims space now."
+      echo "    Requires sudo."
+      read -p "Continue? [y/N] " confirm
+      if [[ "$confirm" =~ ^[Yy]$ ]]; then
+        snapshots=$(tmutil listlocalsnapshots / 2>/dev/null | grep '^com\.apple\.TimeMachine\.' | sed -E 's/^com\.apple\.TimeMachine\.//; s/\.local.*$//')
+        if [ -z "$snapshots" ]; then
+          echo "ℹ️  No local snapshots found — nothing to thin."
+        else
+          success=0
+          failed=0
+          while IFS= read -r snap; do
+            [ -z "$snap" ] && continue
+            if sudo tmutil deletelocalsnapshots "$snap" >/dev/null 2>&1; then
+              success=$((success + 1))
+            else
+              failed=$((failed + 1))
+            fi
+          done <<< "$snapshots"
+          echo "✅  Removed $success local snapshot(s)."
+          if [ "$failed" -gt 0 ]; then
+            echo "⚠️  $failed snapshot(s) could not be removed — this can happen with in-use or protected snapshots."
+          fi
+        fi
       else
         echo "❎  Skipped — nothing touched."
       fi
