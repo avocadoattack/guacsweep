@@ -1,3 +1,5 @@
+<img src="docs/avatar.png" width="80" align="left" />
+
 # guacsweep 🥑🧹
 
 **A lean and transparent terminal-only macOS maintenance tool.**
