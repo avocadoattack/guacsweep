@@ -1,6 +1,8 @@
 <img src="docs/avatar.png" width="80" align="left" />
 
-# guacsweep 🥑🧹
+# guacsweep
+
+<br clear="left"/>
 
 **A lean and transparent terminal-only macOS maintenance tool.**
 
@@ -136,4 +138,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the process.
 
 ## 📄 License
 
-MIT, see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE). © 2026 avocadoattack - Mr. Avocado
