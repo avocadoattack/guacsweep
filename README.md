@@ -8,6 +8,8 @@ guacsweep is a single, dependency-free bash script that clears the junk CleanMyM
 [![Shell](https://img.shields.io/badge/Shell-Bash%203.2%2B-4EAA25?logo=gnubash&logoColor=white)]()
 [![macOS](https://img.shields.io/badge/macOS-000000?logo=apple&logoColor=white)]()
 [![Dependencies](https://img.shields.io/badge/Dependencies-None-brightgreen)]()
+[![Buy Me a Coffee](https://img.shields.io/badge/Support-Buy_Me_a_Coffee-FFDD00?logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/avocadoattack)
+[![Ko-fi](https://img.shields.io/badge/Support-Ko--fi-FF5E5B?logo=kofi&logoColor=white)](https://ko-fi.com/avocadoattack)
 
 ![guacsweep demo](docs/demo.gif)
 
