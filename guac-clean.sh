@@ -12,6 +12,7 @@ options=(
   "Flush DNS Cache"
   "System Junk (User Caches + Logs)"
   "System Caches (sudo, /Library/Caches)"
+  "Recent Items"
   "──────── ⚠️  destructive below ────────"
   "🔥 Empty Trash (Permanent Delete)"
   "Exit"
@@ -77,6 +78,32 @@ do
         echo "    $batch"
         echo "    Review or restore anytime before running Empty Trash."
         echo "    Note: a few items may be skipped if actively in use — that's normal."
+      else
+        echo "❎  Skipped — nothing touched."
+      fi
+      ;;
+    "Recent Items")
+      echo "🧹  This clears your Recent Items lists — Apple menu Recent Documents/Applications/Servers,"
+      echo "    and each app's own File > Open Recent menu."
+      echo "    These are just shortcuts to files you've opened — not the files themselves."
+      echo "    Note: apps already open may not reflect this until you quit and reopen them."
+      echo "    Nothing is deleted directly — everything moves to a dated folder inside Trash first."
+      read -p "Continue? [y/N] " confirm
+      if [[ "$confirm" =~ ^[Yy]$ ]]; then
+        batch="$HOME/.Trash/guac-clean-recent-items-$(date +%Y%m%d-%H%M%S)"
+        mkdir -p "$batch"
+
+        shopt -s nullglob dotglob
+        recent_items=("$HOME/Library/Application Support/com.apple.sharedfilelist"/*)
+        shopt -u nullglob dotglob
+
+        if [ ${#recent_items[@]} -gt 0 ]; then
+          mv "${recent_items[@]}" "$batch/" 2>/dev/null
+        fi
+
+        echo "✅  Moved ${#recent_items[@]} item(s) to Trash:"
+        echo "    $batch"
+        echo "    Review or restore anytime before running Empty Trash."
       else
         echo "❎  Skipped — nothing touched."
       fi
