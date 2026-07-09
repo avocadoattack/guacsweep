@@ -1,6 +1,5 @@
 #!/bin/bash
-# guac-clean: a lean, transparent macOS maintenance script 🥑
-# (placeholder name; will be renamed before publishing)
+# guacsweep: a lean, transparent macOS maintenance script 🥑
 
 if [ -t 1 ]; then
   BOLD=$(tput bold 2>/dev/null)
@@ -66,7 +65,7 @@ sudo_notice() {
 # --- Safe, reusable actions (no confirm prompt inside; callers handle that) ---
 
 do_user_junk() {
-  local batch="$HOME/.Trash/guac-clean-user-junk-$(date +%Y%m%d-%H%M%S)"
+  local batch="$HOME/.Trash/guacsweep-user-junk-$(date +%Y%m%d-%H%M%S)"
   mkdir -p "$batch/Caches" "$batch/Logs" "$batch/Xcode"
   shopt -s nullglob dotglob
   local cache_items=("$HOME"/Library/Caches/*)
@@ -87,7 +86,7 @@ do_user_junk() {
 }
 
 do_system_caches() {
-  local batch="$HOME/.Trash/guac-clean-system-junk-$(date +%Y%m%d-%H%M%S)"
+  local batch="$HOME/.Trash/guacsweep-system-junk-$(date +%Y%m%d-%H%M%S)"
   mkdir -p "$batch"
   shopt -s nullglob dotglob
   local sys_cache_items=(/Library/Caches/*)
@@ -102,7 +101,7 @@ do_system_caches() {
 }
 
 do_recent_items() {
-  local batch="$HOME/.Trash/guac-clean-recent-items-$(date +%Y%m%d-%H%M%S)"
+  local batch="$HOME/.Trash/guacsweep-recent-items-$(date +%Y%m%d-%H%M%S)"
   mkdir -p "$batch"
   shopt -s nullglob dotglob
   local recent_items=("$HOME/Library/Application Support/com.apple.sharedfilelist"/*)
@@ -115,7 +114,7 @@ do_recent_items() {
 }
 
 do_terminal_history() {
-  local batch="$HOME/.Trash/guac-clean-terminal-history-$(date +%Y%m%d-%H%M%S)"
+  local batch="$HOME/.Trash/guacsweep-terminal-history-$(date +%Y%m%d-%H%M%S)"
   mkdir -p "$batch"
   local moved=0
   for f in "$HOME/.zsh_history" "$HOME/.bash_history"; do
@@ -134,7 +133,7 @@ do_terminal_history() {
 do_download_history() {
   local qfile="$HOME/Library/Preferences/com.apple.LaunchServices.QuarantineEventsV2"
   if [ -e "$qfile" ]; then
-    local batch="$HOME/.Trash/guac-clean-download-history-$(date +%Y%m%d-%H%M%S)"
+    local batch="$HOME/.Trash/guacsweep-download-history-$(date +%Y%m%d-%H%M%S)"
     mkdir -p "$batch"
     mv "$qfile" "$batch/" 2>/dev/null
     echo "✅  Moved download history to Trash."
@@ -176,7 +175,7 @@ do_snapshot_thinning() {
 # --- Startup banner ---
 
 clear
-echo "${BOLD}🥑  guac-clean: Keeping your Mac ripe${RESET}"
+echo "${BOLD}🥑  guacsweep: Keeping your Mac ripe${RESET}"
 echo ""
 printf '%-22s%s\n' '      ___' ""
 printf '%-22s%s\n' '    /     \' "+--------------------------------------------------------------+"
@@ -454,7 +453,7 @@ while true; do
           if [ ${#selected_indices[@]} -eq 0 ]; then
             echo "❎  Nothing selected, no changes made."
           else
-            batch="$HOME/.Trash/guac-clean-leftover-sweep-$(date +%Y%m%d-%H%M%S)"
+            batch="$HOME/.Trash/guacsweep-leftover-sweep-$(date +%Y%m%d-%H%M%S)"
             moved_total=0
             for sel in "${selected_indices[@]}"; do
               if [ "$sel" -lt 1 ] || [ "$sel" -gt "${#unique_ids[@]}" ]; then
