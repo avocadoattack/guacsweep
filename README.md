@@ -37,7 +37,9 @@ No Homebrew, toolchains, or third-party libraries needed. GuacSweep is plain POS
 
 ## 📦 Installation
 
-**🔹 Option A ➔ <ins>Clone the repo</ins>** (recommended if you want to read the whole thing first):
+### Option A: Clone the repo
+
+Recommended if you want to read the whole thing first, which is the point:
 
 ```bash
 git clone https://github.com/avocadoattack/GuacSweep.git
@@ -45,40 +47,45 @@ cd GuacSweep
 chmod +x guacsweep.sh
 ```
 
-**🔹 Option B ➔ <ins>Download just the script</ins>**:
+### Option B: Download just the script
 
-- With `curl`:
+With `curl`:
+
 ```bash
 curl -o guacsweep.sh https://raw.githubusercontent.com/avocadoattack/GuacSweep/master/guacsweep.sh
 chmod +x guacsweep.sh
 ```
 
-- With `wget`:
+With `wget`:
+
 ```bash
 wget https://raw.githubusercontent.com/avocadoattack/GuacSweep/master/guacsweep.sh
 chmod +x guacsweep.sh
 ```
 
 > [!IMPORTANT]
-> None of the commands above run anything, they only download the script and mark it executable. **Take a look at what you downloaded first** (`cat guacsweep.sh`, or open it in any editor) before going further, that's the entire reason this project exists as plain bash instead of a compiled binary.
+> None of the commands above run anything: they only download the script and mark it executable. Take a look at what you downloaded first (`cat guacsweep.sh`, or open it in any editor). That's the entire reason GuacSweep is plain bash instead of a compiled binary.
 
-**🔹 Once you're satisfied, run it:**
+### Run it
 
 ```bash
 ./guacsweep.sh
 ```
 
-**📌 Optional ➔ Install it globally**, so you can just type `guacsweep` from *any* Terminal window instead of `./guacsweep.sh`:
+### Optional: Install it globally
+
+So you can just type `guacsweep` from *any* Terminal window instead of `./guacsweep.sh`:
 
 ```bash
 curl -o /usr/local/bin/guacsweep https://raw.githubusercontent.com/avocadoattack/GuacSweep/master/guacsweep.sh
 chmod +x /usr/local/bin/guacsweep
 ```
 
-> [!TIP]
-> If `/usr/local/bin` isn't writable on your system, prefix both commands with `sudo`. Same rule applies, take a look at `/usr/local/bin/guacsweep` before typing `guacsweep` for the first time.
+> If `/usr/local/bin` isn't writable on your system, prefix both commands with `sudo`. Transparency applies here too: take a look at `/usr/local/bin/guacsweep` before typing `guacsweep` for the first time.
 
-> **Updating:** there's no package manager yet, so updating just means re-running whichever download command you used above, it overwrites the old copy with the current version.
+### Updating
+
+There's no package manager yet, so updating just means re-running whichever download command you used above. It overwrites the old copy with the current version.
 
 ---
 
