@@ -64,7 +64,7 @@ chmod +x guacsweep.sh
 ```
 
 > [!IMPORTANT]
-> None of the commands above run anything: they only download the script and mark it executable. Take a look at what you downloaded first (`cat guacsweep.sh`, or open it in any editor). That's the entire reason GuacSweep is plain bash instead of a compiled binary.
+> The commands above just download and make the script executable; they don’t run it. Review the script yourself before running it (`cat guacsweep.sh`). That’s why GuacSweep is plain bash, not a compiled binary.
 
 ### Run it
 
@@ -81,7 +81,7 @@ curl -o /usr/local/bin/guacsweep https://raw.githubusercontent.com/avocadoattack
 chmod +x /usr/local/bin/guacsweep
 ```
 
-> If `/usr/local/bin` isn't writable on your system, prefix both commands with `sudo`. Transparency applies here too: take a look at `/usr/local/bin/guacsweep` before typing `guacsweep` for the first time.
+> If `/usr/local/bin` isn't writable on your system, prefix both commands with `sudo`. Transparency applies here, too: take a look at `/usr/local/bin/guacsweep` before typing `guacsweep` for the first time.
 
 ### Updating
 
