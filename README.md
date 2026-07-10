@@ -5,7 +5,7 @@
 
 # GuacSweep
 
-**A lean and transparent terminal-only macOS maintenance tool.**
+**A lean, transparent, and non-destructive macOS CLI cleanup tool**
 
 </td>
 </tr>
