@@ -143,4 +143,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the process.
 
 ## 📄 License
 
-MIT. See [LICENSE](LICENSE). © 2026 avocadoattack - Mr. Avocado
+[MIT](LICENSE) © 2026 avocadoattack - Mr. Avocado
