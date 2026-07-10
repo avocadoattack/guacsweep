@@ -210,7 +210,7 @@ if command -v figlet >/dev/null 2>&1; then
   pad=$(( (fig_width - tagline_len) / 2 ))
   [ "$pad" -lt 0 ] && pad=0
   printf "%${pad}s%s\n" "" "$tagline"
-  credit="Mashed by: Mr. Avocado aka avocadoattack (v1.0.0)"
+  credit="Mashed by: Mr. Avocado aka avocadoattack (v1.0.1)"
   credit_len=${#credit}
   credit_pad=$(( (fig_width - credit_len) / 2 ))
   [ "$credit_pad" -lt 0 ] && credit_pad=0
@@ -224,7 +224,7 @@ if command -v figlet >/dev/null 2>&1; then
   echo "+--------------------------------------------------------------+"
 else
   echo "${BOLD}🥑  GuacSweep: Keeping your Mac ripe${RESET}"
-  echo "${ITALIC}Mashed by: Mr. Avocado aka avocadoattack (v1.0.0)${RESET}"
+  echo "${ITALIC}Mashed by: Mr. Avocado aka avocadoattack (v1.0.1)${RESET}"
   echo ""
   printf '%-22s%s\n' '      ___' ""
   printf '%-22s%s\n' '    /     \' "+--------------------------------------------------------------+"
