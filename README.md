@@ -1,6 +1,6 @@
 <table>
 <tr>
-<td><img src="docs/avatar.png" width="80" /></td>
+<td><img src="docs/app-icon.png" width="80" /></td>
 <td>
 
 # guacsweep
