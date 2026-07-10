@@ -11,7 +11,7 @@
 </tr>
 </table>
 
-GuacSweep is a single, dependency-free bash script that clears the junk CleanMyMac X clears, without the subscription, the closed source, the bloat, or the compiled binary. It empties caches and logs, clears recent-items and history traces, thins Time Machine snapshots, and scans for orphaned app data left behind by things you've long since uninstalled. Every action moves files to the Trash first, never straight deletion, except one clearly marked option that empties the Trash itself.
+GuacSweep is a single, dependency-free bash script that removes the same junk as CleanMyMac X, but without the subscription, closed source, bloat, or compiled binary. It empties caches, logs, recent items, history traces, trims Time Machine snapshots, and hunts down orphaned app data left by long-uninstalled apps. Files are trashed first, not deleted, unless you choose the empty Trash option.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Shell](https://img.shields.io/badge/Shell-Bash%203.2%2B-4EAA25?logo=gnubash&logoColor=white)]()
