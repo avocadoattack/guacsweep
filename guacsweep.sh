@@ -3,9 +3,11 @@
 
 if [ -t 1 ]; then
   BOLD=$(tput bold 2>/dev/null)
+  ITALIC=$(tput sitm 2>/dev/null)
   RESET=$(tput sgr0 2>/dev/null)
 else
   BOLD=""
+  ITALIC=""
   RESET=""
 fi
 
@@ -189,6 +191,11 @@ if command -v figlet >/dev/null 2>&1; then
   pad=$(( (fig_width - tagline_len) / 2 ))
   [ "$pad" -lt 0 ] && pad=0
   printf "%${pad}s%s\n" "" "$tagline"
+  credit="Mashed by: Mr. Avocado aka avocadoattack (v1.0.0)"
+  credit_len=${#credit}
+  credit_pad=$(( (fig_width - credit_len) / 2 ))
+  [ "$credit_pad" -lt 0 ] && credit_pad=0
+  printf "%${credit_pad}s${ITALIC}%s${RESET}\n" "" "$credit"
   echo ""
   echo "+--------------------------------------------------------------+"
   printf '| %-60s |\n' "Nothing here is destructive by default."
@@ -198,6 +205,7 @@ if command -v figlet >/dev/null 2>&1; then
   echo "+--------------------------------------------------------------+"
 else
   echo "${BOLD}🥑  guacsweep: Keeping your Mac ripe${RESET}"
+  echo "${ITALIC}Mashed by: Mr. Avocado aka avocadoattack (v1.0.0)${RESET}"
   echo ""
   printf '%-22s%s\n' '      ___' ""
   printf '%-22s%s\n' '    /     \' "+--------------------------------------------------------------+"
