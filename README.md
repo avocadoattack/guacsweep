@@ -11,12 +11,13 @@
 </tr>
 </table>
 
-GuacSweep is a single, dependency-free bash script that removes the same junk as CleanMyMac X, but without the subscription, closed source, bloat, or compiled binary. It empties caches, logs, recent items, history traces, trims Time Machine snapshots, and hunts down orphaned app data left by long-uninstalled apps. Files are trashed first, not deleted, unless you choose the empty Trash option.
+GuacSweep is a simple, dependency-free Bash script that cleans up the same junk as CleanMyMac X, but without the subscription, closed source, bloat, or binaries. It clears caches, logs, recent items, history traces, trims Time Machine snapshots, and finds orphaned app data from old apps. Files go to Trash first.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Shell](https://img.shields.io/badge/Shell-Bash%203.2%2B-4EAA25?logo=gnubash&logoColor=white)]()
 [![macOS](https://img.shields.io/badge/macOS-000000?logo=apple&logoColor=white)]()
 [![Dependencies](https://img.shields.io/badge/Dependencies-None-brightgreen)]()
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/avocadoattack/GuacSweep?label=Size)
 [![Buy Me a Coffee](https://img.shields.io/badge/Support-Buy_Me_a_Coffee-FFDD00?logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/avocadoattack)
 [![Ko-fi](https://img.shields.io/badge/Support-Ko--fi-FF5E5B?logo=kofi&logoColor=white)](https://ko-fi.com/avocadoattack)
 
@@ -28,15 +29,15 @@ GuacSweep is a single, dependency-free bash script that removes the same junk as
 
 ## 🔍 What it does
 
-GuacSweep presents a numbered menu and runs one action at a time. Ten options total: seven safe, reversible cleanup actions; one review-before-you-move scan for orphaned app data; one shortcut to run all seven safe actions in sequence; and one, and only one, action that's genuinely irreversible.
+GuacSweep uses a simple numbered menu—one action at a time. Choose from ten options: seven safe, reversible cleanups; one scan to review orphaned app data; one shortcut to run all safe actions; and one truly irreversible option.
 
-Nothing here requires Homebrew, a compiled toolchain, or any third-party library. It's plain POSIX-ish bash, compatible with the ancient `bash 3.2` that Apple still ships by default on every Mac, and it runs the moment you `chmod +x` it.
+No Homebrew, toolchains, or third-party libraries needed. GuacSweep is plain POSIX-ish Bash, compatible with the ancient `bash 3.2`, which Apple still ships by default on every Mac. It runs as soon as you `chmod +x`.
 
 ---
 
 ## 📦 Installation
 
-No Homebrew formula yet. For now, this is as simple as it gets:
+This is as simple as it gets:
 
 ```bash
 git clone https://github.com/avocadoattack/guacsweep.git
@@ -45,36 +46,23 @@ chmod +x guacsweep.sh
 ./guacsweep.sh
 ```
 
-That's it. No build step, no dependencies to resolve. Run it and confirm you see the menu, that's the whole install.
+That's it. No build step, no dependencies to resolve. Run it and confirm you see the menu.
 
 ---
 
 ## 🌱 Why I built this
 
-I used to have a one-time CleanMyMac X license, but I only used a few of its features. Instead of paying for a subscription cleaner or upgrading, I wanted something that did those same things for free, with no hidden catches.
+I owned a CleanMyMac X license but used only a few features. Rather than pay for a subscription, I wanted a free tool with no strings attached that did the basics.
 
-There are already two great free and open-source options: [PureMac](https://github.com/momenbasel/PureMac), a native macOS uninstaller and system cleaner (MIT-licensed), and [Mole](https://github.com/tw93/Mole), a powerful command-line cleaner (GPL-3.0-licensed) with lots of features like disk analysis, a live dashboard, and developer artifact cleanup. Both are actively maintained and fully open source. GuacSweep isn’t trying to compete with them on features.
+Two excellent open-source alternatives exist: [PureMac](https://github.com/momenbasel/PureMac), a native macOS uninstaller and cleaner, and [Mole](https://github.com/tw93/Mole), a command-line powerhouse with features like disk analysis and artifact cleanup. Both are well-maintained and open source. GuacSweep doesn’t aim to compete on features.
 
-1. First, I wanted something you could read from start to finish in plain text before running it. PureMac ships as a signed native app. Mole, to its real credit, is mostly plain shell script itself, genuinely impressive for a tool this feature-rich, but it does compile a real Go component for some of its more advanced features. With a compiled tool, you have to trust that the binary matches the source code. GuacSweep's promise is narrower but absolute: there is no compiled component anywhere in the project, for any feature. The file you download *is* the whole program.
+My goal was simplicity and transparency. I wanted a script you could read in full before running. PureMac is a signed app; Mole is mostly shell but includes some compiled Go code for advanced features, which means trusting the binary matches the source. With GuacSweep, what you download is the whole program; no compiled parts, ever.
 
-2. Second, I wanted something simple and focused on just the features I use most, not a full toolkit. If you need more than what GuacSweep offers, both PureMac and especially Mole are great choices. Either one is a solid option for anything GuacSweep doesn’t handle.
-
----
-
-## 🛡️ Safety model
-
-Every design decision in this script follows from one rule: **nothing is ever silently destructive.**
-
-- **Trash-first, always.** Every cleanup action moves files into a dated, clearly labeled folder inside `~/.Trash` rather than deleting anything directly. If something turns out to matter, drag it back out. This applies to every option except one.
-- **One irreversible action, clearly marked.** `🔥 Empty Trash (Permanent Delete)` is the only action in the entire script that finalizes deletion. It's visually set apart, requires typing the literal word `EMPTY` (not just `y`) to confirm, and its warning text explains exactly why it's different from everything else in the menu.
-- **Confirm before anything runs.** Every action explains what it's about to do and asks for confirmation first. Nothing fires on a stray keypress.
-- **Ctrl+C always gets you out.** Hitting Ctrl+C at any prompt, including a sudo password prompt, cancels cleanly and drops you back at the main menu rather than leaving you stuck or killing the script outright.
-- **`mv`-based Trash, deliberately, not AppleScript.** Files are moved into Trash with plain `mv`, not by asking Finder to delete them via AppleScript. This is a conscious tradeoff: `mv` needs zero extra permissions and adds no dependency on Finder automation access, which matches the "as little trust surface as possible" philosophy of the whole project. The cost is that Finder's right-click **"Put Back"** feature won't work on anything GuacSweep trashes, since that requires the original-location metadata Finder's own delete API attaches. You can still manually drag anything back to where it came from; you just won't get the one-click shortcut.
-- **Every `sudo` call is announced first.** Three options and part of the Full Sweep need elevated permissions (clearing system-wide caches, flushing DNS, thinning Time Machine snapshots). Each one tells you up front that macOS is about to ask for your password, and that Ctrl+C cancels cleanly if you change your mind.
+I also wanted something focused: just the essentials I use, not a full toolkit. If you need more, PureMac and Mole are both solid choices for anything GuacSweep doesn’t cover.
 
 ---
 
-## ⚙️ Features
+## ✨ Menu options (features)
 
 | # | Option | What it does |
 |---|---|---|
@@ -109,25 +97,34 @@ Every design decision in this script follows from one rule: **nothing is ever si
 
 <sub>
 ¹ Mole, the CLI tool, (what's compared throughout this table) is GPL-3.0 licensed and fully open source. Mole for Mac is a separate, proprietary GUI app from the same author.<br>
-² Per GitHub's own language breakdown of the repository: roughly 82% shell, 18% Go. The large majority of Mole is genuinely plain, readable shell script; a real but minority portion, notably its live status dashboard and disk analyzer, compiles down to a Go binary.<br>
+² Per GitHub's own language breakdown of the repository: roughly 82% shell, 18% Go. The large majority of Mole is genuinely plain, readable shell script; a real but minority portion compiles down to a Go binary.<br>
 ³ The core differentiator this project exists for: a plain-text script you can read end to end has no gap between "the source" and "what runs," unlike anything that goes through a compile step.<br>
-⁴ Code-signing and notarization exist to satisfy Gatekeeper's checks on compiled executables. A plain shell script isn't in that category to begin with, so this isn't a workaround, it's simply a different distribution model.<br>
-⁵ Leftover Sweep matches by bundle identifier and reports a reviewable summary, but intentionally stops short of PureMac's and Mole's deeper heuristics (normalized-name matching, Team ID resolution). See [Known limitations](#%EF%B8%8F-known-limitations).<br>
+⁴ Code-signing and notarization exist to satisfy Gatekeeper's checks on compiled executables. A plain shell script isn't in that category to begin with, so this isn't a workaround, it's a different distribution model.<br>
+⁵ Leftover Sweep matches by bundle identifier and reports a reviewable summary, but intentionally stops short of PureMac's and Mole's deeper heuristics (normalized-name matching, Team ID resolution).<br>
 </sub>
+
+---
+
+## 🛡️ Safety model
+
+Every design decision in this script follows from one rule: **nothing is ever silently destructive.**
+
+- **Trash-first.** Cleanup actions move files into a dated, clearly labeled folder inside `~/.Trash` rather than deleting anything directly. If something turns out to matter, drag it back out.
+- **`mv`-based Trash.** Files are moved into Trash with plain `mv`, not by asking Finder to delete them via AppleScript. This avoids extra permissions and dependencies, but disables Finder’s “Put Back” shortcut. You can still drag files back manually.
+- **One irreversible action.** `🔥 Empty Trash (Permanent Delete)` . It’s set apart in the menu, requires typing `EMPTY` to confirm, and shows a clear warning.
+- **Confirm before anything runs.** Every action explains what it’s about to do and asks for confirmation first. Nothing fires on a stray keypress.
+- **Ctrl+C always gets you out.** Hitting Ctrl+C at any prompt, including a sudo password prompt, cancels cleanly and returns you to the main menu.
+- **`sudo` calls are announced first.** Three menu options and Leftover Sweep require elevated permissions. You’re told up front, and Ctrl+C cancels cleanly.
 
 ---
 
 ## ⚠️ Known limitations
 
-- **Leftover Sweep can both over-flag and under-flag.** Apps with unconventional helper naming (concatenated suffixes with no separating dot, Team-ID-prefixed containers, vendors that use multiple unrelated bundle-ID families for one product) can show up as false positives even though they're installed. Shared SDKs used across many unrelated apps (Sparkle, Firebase, Bugsnag, Google Keystone) will also appear, since they don't map to any single parent app. 
-
-> [!IMPORTANT]
-> Always review the Leftover Sweep Scan summary **before** selecting anything to move.
-
-- **System-level junk clearing is deliberately conservative.** `/System/Library/Caches` is skipped entirely, since it's SIP-protected on any modern Mac and writes there simply fail. System log files (`/var/log` and friends) are also out of scope by design, not oversight: routinely wiping them trades away a diagnostic and forensic trail that some users (including the original author) actively rely on.
-- **No Finder "Put Back."** Since Trash moves use plain `mv` rather than Finder's own delete API, restoring a trashed item means manually moving it back to its original location. See [Safety model](#%EF%B8%8F-safety-model) for why this tradeoff was made deliberately.
-- **Terminal history clearing only affects the file on disk.** Your currently-open terminal session keeps its own command history in memory. For a fully clean sweep, run that option from a window you're about to close, or open a fresh one afterward.
-- **Tested primarily on Intel Mac hardware, on one machine.** Community testing on other configurations is welcome.
+- **Leftover Sweep may over- or under-flag.** Apps with unusual helper naming (concatenated suffixes with no separating dot, Team-ID-prefixed containers, vendors that use multiple unrelated bundle-ID families for one product) or shared SDKs (e.g., Sparkle, Firebase, Bugsnag, Google Keystone) can appear as false positives or be missed.
+- **System junk cleaning is conservative.** `/System/Library/Caches` and system log files (`/var/log` and friends) are skipped entirely to avoid losing access to files' diagnostic and forensic trails.
+- **Finder's “Put Back” won't show.** Since Trash moves use plain `mv` rather than Finder's own delete API, restoring a trashed item means manually moving it back to its original location. See [Safety model](#%EF%B8%8F-safety-model) for why this tradeoff was made deliberately.
+- **Clearing terminal history only affects the file on disk.** Your currently-open terminal session keeps its own command history in memory. For a full clean, close and reopen your terminal.
+- **Primarily tested on Intel Macs.** Community testing and feedback for Apple Silicon is welcome.
 
 ---
 
@@ -141,9 +138,9 @@ Every design decision in this script follows from one rule: **nothing is ever si
 
 ## 🤝 Contributing
 
-PRs are welcome. The highest-value area to help with is **Leftover Sweep**: its bundle-identifier matching is deliberately conservative, and there's real room to improve how it handles Team-ID-prefixed containers, concatenated helper suffixes, and shared-SDK false positives, without sacrificing the review-before-anything-moves safety model.
+PRs are welcome. The highest-value area to help with is **Leftover Sweep**: its bundle-identifier matching is deliberately conservative, and there's real room to improve how it handles Team-ID-prefixed containers, concatenated helper suffixes, and shared-SDK false positives, without sacrificing the project's safety model.
 
-Bug reports, scope suggestions, and reports of behavior on other macOS versions or Apple Silicon hardware are welcome too.
+Bug reports, scope suggestions, and reports of behavior on other macOS versions or Apple Silicon hardware are welcome, too.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the process.
 
@@ -151,8 +148,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the process.
 
 ## 🙏 Acknowledgments
 
-- **[PureMac](https://github.com/momenbasel/PureMac)** (MIT licensed), whose bundle-identifier matching approach directly informed how Leftover Sweep detects orphaned app data, and whose README was a direct inspiration for this one's structure and tone. No PureMac code was used, Swift and bash aren't interchangeable anyway, but the underlying technique was the model to build from.
-- **[Mole](https://github.com/tw93/Mole)** (GPL-3.0 licensed; not to be confused with Mole for Mac, a separate proprietary app from the same author), whose dry-run safety UX and categorized reporting style shaped several of GuacSweep's own UX decisions. A genuinely excellent, far more feature-complete tool if you want more than GuacSweep's deliberately narrow scope.
+- **[PureMac](https://github.com/momenbasel/PureMac)**, whose bundle-identifier matching approach directly informed how Leftover Sweep detects orphaned app data, and whose README was a direct inspiration for this one's structure and tone. No PureMac code was used, Swift and bash aren't interchangeable anyway, but the underlying technique was the model to build from.
+- **[Mole](https://github.com/tw93/Mole)**, whose dry-run safety UX and categorized reporting style shaped several of GuacSweep's own UX decisions. A genuinely excellent, far more feature-complete tool if you want more than GuacSweep's deliberately narrow scope.
 
 ---
 
